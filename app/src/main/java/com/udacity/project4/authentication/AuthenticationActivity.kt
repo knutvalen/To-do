@@ -3,7 +3,6 @@ package com.udacity.project4.authentication
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
@@ -13,6 +12,7 @@ import com.firebase.ui.auth.IdpResponse
 import com.google.firebase.auth.FirebaseAuth
 import com.udacity.project4.R
 import com.udacity.project4.databinding.ActivityAuthenticationBinding
+import com.udacity.project4.utils.AuthenticationState
 import timber.log.Timber
 
 /**
@@ -29,13 +29,6 @@ class AuthenticationActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//         TODO: Implement the create account and sign in using FirebaseUI, use sign in using email and sign in using Google
-
-//          TODO: If the user was authenticated, send him to RemindersActivity
-
-//          TODO: a bonus is to customize the sign in flow to look nice using :
-        //https://github.com/firebase/FirebaseUI-Android/blob/master/auth/README.md#custom-layout
-
         val binding = DataBindingUtil.setContentView<ActivityAuthenticationBinding>(
             this,
             R.layout.activity_authentication
@@ -48,6 +41,14 @@ class AuthenticationActivity : AppCompatActivity() {
                 startAuthentication()
             }
         }
+
+        viewModel.authenticationState.observe(this) { authenticationState ->
+            when (authenticationState) {
+                AuthenticationState.AUTHENTICATED -> finish()
+
+                else -> Timber.i("Authentication state that doesn't require any UI change $authenticationState")
+            }
+        }
     }
 
     private fun startAuthentication() {
@@ -56,10 +57,10 @@ class AuthenticationActivity : AppCompatActivity() {
             AuthUI.IdpConfig.GoogleBuilder().build()
         )
 
-        val intentBuilder = AuthUI.getInstance().createSignInIntentBuilder()
-            .setAvailableProviders(providers)
+        val intent = AuthUI.getInstance().createSignInIntentBuilder()
+            .setAvailableProviders(providers).build()
 
-        startActivityForResult(intentBuilder.build(), SIGN_IN_RESULT_CODE)
+        startActivityForResult(intent, SIGN_IN_RESULT_CODE)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

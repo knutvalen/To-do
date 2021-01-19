@@ -5,6 +5,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
+import com.udacity.project4.R
+import com.udacity.project4.utils.AuthenticationState
+import timber.log.Timber
 
 /**
  * Base Fragment to observe on the common LiveData objects
@@ -38,6 +41,13 @@ abstract class BaseFragment : Fragment() {
                     command.destinationId,
                     false
                 )
+            }
+        })
+
+        _viewModel.authenticationState.observe(this, Observer { authenticationState ->
+            when (authenticationState) {
+                AuthenticationState.UNAUTHENTICATED -> findNavController().navigate(R.id.authenticationActivity)
+                else -> Timber.i("$authenticationState")
             }
         })
     }
