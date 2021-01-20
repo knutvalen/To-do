@@ -11,8 +11,8 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
@@ -21,7 +21,6 @@ import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
 import timber.log.Timber
-import java.util.*
 
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
@@ -29,10 +28,11 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     override val viewModel: SaveReminderViewModel by inject()
     private lateinit var binding: FragmentSelectLocationBinding
     private lateinit var map: GoogleMap
+    private var poiMarker: Marker? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = DataBindingUtil.inflate(
             inflater,
             R.layout.fragment_select_location,
@@ -51,9 +51,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         mapFragment.getMapAsync(this)
 
 //        TODO: add style to the map
-//        TODO: put a marker to location that the user selected
-
-
 //        TODO: call this function after the user confirms on the selected location
         onLocationSelected()
 
@@ -93,7 +90,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
-        setMapLongClick(map)
         setPoiClick(map)
         enableMyLocation()
     }
@@ -114,7 +110,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                     map.moveCamera(
                         CameraUpdateFactory.newLatLngZoom(
                             LatLng(location.latitude, location.longitude),
-                            18f
+                            16f
                         )
                     )
                 }
@@ -137,34 +133,16 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         }
     }
 
-    private fun setMapLongClick(map: GoogleMap) {
-        map.setOnMapLongClickListener { latLng ->
-            // A Snippet is Additional text that's displayed below the title.
-            val snippet = String.format(
-                Locale.getDefault(),
-                "Lat: %1$.5f, Long: %2$.5f",
-                latLng.latitude,
-                latLng.longitude
-            )
-            map.addMarker(
-                MarkerOptions()
-                    .position(latLng)
-                    .title(getString(R.string.dropped_pin))
-                    .snippet(snippet)
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
-            )
-        }
-    }
-
     private fun setPoiClick(map: GoogleMap) {
         map.setOnPoiClickListener { poi ->
-            val poiMarker = map.addMarker(
+            poiMarker?.remove()
+            poiMarker = map.addMarker(
                 MarkerOptions()
                     .position(poi.latLng)
                     .title(poi.name)
             )
 
-            poiMarker.showInfoWindow()
+            poiMarker?.showInfoWindow()
         }
     }
 
