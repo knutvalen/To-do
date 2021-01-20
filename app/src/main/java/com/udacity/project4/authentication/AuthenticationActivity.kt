@@ -3,6 +3,7 @@ package com.udacity.project4.authentication
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.addCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
@@ -12,6 +13,7 @@ import com.firebase.ui.auth.IdpResponse
 import com.google.firebase.auth.FirebaseAuth
 import com.udacity.project4.R
 import com.udacity.project4.databinding.ActivityAuthenticationBinding
+import com.udacity.project4.locationreminders.RemindersActivity
 import com.udacity.project4.utils.AuthenticationState
 import timber.log.Timber
 
@@ -43,12 +45,18 @@ class AuthenticationActivity : AppCompatActivity() {
         }
 
         viewModel.authenticationState.observe(this) { authenticationState ->
-            when (authenticationState) {
-                AuthenticationState.AUTHENTICATED -> finish()
+            Timber.i("authenticationState: $authenticationState")
 
-                else -> Timber.i("Authentication state that doesn't require any UI change $authenticationState")
+            if (authenticationState == AuthenticationState.AUTHENTICATED) {
+                val intent = Intent(this, RemindersActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                }
+                startActivity(intent)
             }
         }
+
+
     }
 
     private fun startAuthentication() {
