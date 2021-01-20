@@ -51,11 +51,10 @@ abstract class BaseFragment : Fragment() {
                     val intent = Intent(activity, AuthenticationActivity::class.java).apply {
                         addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
                         addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-
                     }
                     startActivity(intent)
                 }
-                else -> Timber.i("$authenticationState")
+                else -> Timber.i("authenticationState observer: $authenticationState")
             }
         })
     }
