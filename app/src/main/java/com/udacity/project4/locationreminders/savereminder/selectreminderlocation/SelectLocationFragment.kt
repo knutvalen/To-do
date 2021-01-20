@@ -14,8 +14,10 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.PointOfInterest
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
+import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentSelectLocationBinding
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
@@ -29,6 +31,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private lateinit var binding: FragmentSelectLocationBinding
     private lateinit var map: GoogleMap
     private var poiMarker: Marker? = null
+    private var pointOfInterest: PointOfInterest? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -42,6 +45,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
         binding.viewModel = viewModel
         binding.lifecycleOwner = this
+        binding.buttonSaveLocation.isEnabled = false
 
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(true)
@@ -51,8 +55,10 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         mapFragment.getMapAsync(this)
 
 //        TODO: add style to the map
-//        TODO: call this function after the user confirms on the selected location
-        onLocationSelected()
+
+        binding.buttonSaveLocation.setOnClickListener {
+            onLocationSelected()
+        }
 
         return binding.root
     }
@@ -61,6 +67,13 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         //        TODO: When the user confirms on the selected location,
         //         send back the selected location details to the view model
         //         and navigate back to the previous fragment to save the reminder and add the geofence
+        pointOfInterest?.let { pointOfInterest ->
+            viewModel.reminderSelectedLocationStr.value = pointOfInterest.name
+            viewModel.selectedPOI.value = pointOfInterest
+            viewModel.latitude.value = pointOfInterest.latLng.latitude
+            viewModel.longitude.value = pointOfInterest.latLng.longitude
+            viewModel.navigationCommand.value = NavigationCommand.Back
+        }
     }
 
 
@@ -125,9 +138,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         if (requestCode != LOCATION_PERMISSION_REQUEST_CODE) return
-        // Check if location permissions are granted and if so enable the
-        // location data layer.
-        Timber.i("onRequestPermissionsResult")
         if (grantResults.isNotEmpty() && (grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
             enableMyLocation()
         }
@@ -143,6 +153,9 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             )
 
             poiMarker?.showInfoWindow()
+            pointOfInterest = poi
+
+            binding.buttonSaveLocation.isEnabled = poiMarker != null
         }
     }
 
