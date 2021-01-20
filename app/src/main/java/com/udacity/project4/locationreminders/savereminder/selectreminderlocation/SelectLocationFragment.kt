@@ -6,10 +6,13 @@ import android.os.Bundle
 import android.view.*
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.databinding.DataBindingUtil
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
@@ -26,7 +29,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     override val viewModel: SaveReminderViewModel by inject()
     private lateinit var binding: FragmentSelectLocationBinding
     private lateinit var map: GoogleMap
-    private val REQUEST_LOCATION_PERMISSION = 1
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -48,7 +50,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             .findFragmentById(R.id.googleMap) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-//        TODO: zoom to the user location after taking his permission
 //        TODO: add style to the map
 //        TODO: put a marker to location that the user selected
 
@@ -90,48 +91,49 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         else -> super.onOptionsItemSelected(item)
     }
 
-    override fun onMapReady(googleMap: GoogleMap?) {
-        Timber.i("onMapReady googleMap: $googleMap")
-
-        if (googleMap != null) {
-            map = googleMap
-            setMapLongClick(map)
-            setPoiClick(map)
-            enableMyLocation()
-        }
+    override fun onMapReady(googleMap: GoogleMap) {
+        map = googleMap
+        setMapLongClick(map)
+        setPoiClick(map)
+        enableMyLocation()
     }
 
     private fun enableMyLocation() {
-        if (checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
+        if (!::map.isInitialized) return
+
+        if (checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED
         ) {
-            Timber.i("enableMyLocation() requesting permissions...")
+            map.isMyLocationEnabled = true
+
+            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                Timber.i("lastLocation: $location")
+
+                if (location != null) {
+                    map.moveCamera(
+                        CameraUpdateFactory.newLatLngZoom(
+                            LatLng(location.latitude, location.longitude),
+                            18f
+                        )
+                    )
+                }
+            }
+        } else {
             requestPermissions(
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                REQUEST_LOCATION_PERMISSION
+                LOCATION_PERMISSION_REQUEST_CODE
             )
-        } else {
-            Timber.i("enableMyLocation() enabling my location")
-            map.isMyLocationEnabled = true
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        if (requestCode != LOCATION_PERMISSION_REQUEST_CODE) return
         // Check if location permissions are granted and if so enable the
         // location data layer.
         Timber.i("onRequestPermissionsResult")
-        if (requestCode == REQUEST_LOCATION_PERMISSION) {
-            if (grantResults.isNotEmpty() && (grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-                enableMyLocation()
-            }
+        if (grantResults.isNotEmpty() && (grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+            enableMyLocation()
         }
     }
 
@@ -164,6 +166,10 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
             poiMarker.showInfoWindow()
         }
+    }
+
+    companion object {
+        private const val LOCATION_PERMISSION_REQUEST_CODE = 1
     }
 
 }
