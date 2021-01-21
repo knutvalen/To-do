@@ -1,11 +1,16 @@
 package com.udacity.project4.locationreminders.savereminder.selectreminderlocation
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Looper
 import android.view.*
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.databinding.DataBindingUtil
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -32,6 +37,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private lateinit var map: GoogleMap
     private var poiMarker: Marker? = null
     private var pointOfInterest: PointOfInterest? = null
+    private var requestingLocationUpdates = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -63,6 +69,50 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         return binding.root
     }
 
+    @SuppressLint("MissingPermission")
+    private fun startLocationUpdates() {
+        val fusedLocationProviderClient = LocationServices
+            .getFusedLocationProviderClient(requireContext())
+
+        val locationRequest = LocationRequest.create()?.apply {
+            interval = 10000
+            fastestInterval = 5000
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+
+        val locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult?) {
+                locationResult ?: return
+                if (requestingLocationUpdates == false) return
+
+                for (location in locationResult.locations) {
+                    map.animateCamera(
+                        CameraUpdateFactory.newLatLngZoom(
+                            LatLng(location.latitude, location.longitude),
+                            16f
+                        )
+                    )
+                }
+            }
+        }
+
+        fusedLocationProviderClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            Looper.getMainLooper()
+        )
+    }
+
+    private fun startMapGestureListener() {
+        if (!::map.isInitialized) return
+
+        map.setOnCameraMoveStartedListener { reason ->
+            if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
+                requestingLocationUpdates = false
+            }
+        }
+    }
+
     private fun onLocationSelected() {
         //        TODO: When the user confirms on the selected location,
         //         send back the selected location details to the view model
@@ -72,10 +122,9 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             viewModel.selectedPOI.value = pointOfInterest
             viewModel.latitude.value = pointOfInterest.latLng.latitude
             viewModel.longitude.value = pointOfInterest.latLng.longitude
-            viewModel.navigationCommand.value = NavigationCommand.Back
+            viewModel.navigationCommand.postValue(NavigationCommand.Back)
         }
     }
-
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.map_options, menu)
@@ -105,29 +154,26 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         map = googleMap
         setPoiClick(map)
         enableMyLocation()
+        startMapGestureListener()
+
+        map.setOnMyLocationButtonClickListener {
+            requestingLocationUpdates = true
+            false
+        }
     }
 
     private fun enableMyLocation() {
         if (!::map.isInitialized) return
 
-        if (checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-            == PackageManager.PERMISSION_GRANTED
+        if (checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
         ) {
             map.isMyLocationEnabled = true
+            startLocationUpdates()
+            requestingLocationUpdates = true
 
-            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
-            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                Timber.i("lastLocation: $location")
-
-                if (location != null) {
-                    map.moveCamera(
-                        CameraUpdateFactory.newLatLngZoom(
-                            LatLng(location.latitude, location.longitude),
-                            16f
-                        )
-                    )
-                }
-            }
         } else {
             requestPermissions(
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
@@ -146,6 +192,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private fun setPoiClick(map: GoogleMap) {
         map.setOnPoiClickListener { poi ->
             poiMarker?.remove()
+
             poiMarker = map.addMarker(
                 MarkerOptions()
                     .position(poi.latLng)
@@ -154,7 +201,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
             poiMarker?.showInfoWindow()
             pointOfInterest = poi
-
             binding.buttonSaveLocation.isEnabled = poiMarker != null
         }
     }
