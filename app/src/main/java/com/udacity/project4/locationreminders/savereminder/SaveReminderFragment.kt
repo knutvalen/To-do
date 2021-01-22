@@ -77,7 +77,6 @@ class SaveReminderFragment : BaseFragment() {
             longitude ?: return@setOnClickListener
 
             val reminder = ReminderDataItem(title, description, location, latitude, longitude)
-            viewModel.validateAndSaveReminder(reminder)
 
             val geofence = Geofence.Builder()
                 .setRequestId(reminder.id)
@@ -97,6 +96,7 @@ class SaveReminderFragment : BaseFragment() {
             geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent)?.run {
                 addOnSuccessListener {
                     Timber.i("Geofence added")
+                    viewModel.validateAndSaveReminder(reminder)
                 }
 
                 addOnFailureListener {
