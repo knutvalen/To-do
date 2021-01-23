@@ -2,6 +2,8 @@ package com.udacity.project4.locationreminders.reminderslist
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.firebase.FirebaseApp
 import com.udacity.project4.locationreminders.MainCoroutineRule
 import com.udacity.project4.locationreminders.data.FakeDataSource
 import com.udacity.project4.locationreminders.data.dto.ReminderDTO
@@ -14,7 +16,9 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 
+@RunWith(AndroidJUnit4::class)
 @ExperimentalCoroutinesApi
 class RemindersListViewModelTest {
 
@@ -37,6 +41,7 @@ class RemindersListViewModelTest {
         reminderDataSource = FakeDataSource()
 
         runBlocking {
+            FirebaseApp.initializeApp(getApplicationContext())
             reminderDataSource.saveReminder(ReminderDTO("title1", "description1", "location1", 55.55, 44.44))
         }
 

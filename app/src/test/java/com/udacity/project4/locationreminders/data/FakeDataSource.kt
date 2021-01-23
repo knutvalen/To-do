@@ -13,7 +13,8 @@ class FakeDataSource : ReminderDataSource {
 //    TODO: Create a fake data source to act as a double to the real data source
 
     override suspend fun getReminders(): Result<List<ReminderDTO>> {
-        TODO("Return the reminders")
+        val list: List<ReminderDTO> = dataSource.values.toList()
+        return Result.Success(list)
     }
 
     override suspend fun saveReminder(reminder: ReminderDTO) {
@@ -21,11 +22,15 @@ class FakeDataSource : ReminderDataSource {
     }
 
     override suspend fun getReminder(id: String): Result<ReminderDTO> {
-        TODO("return the reminder with the id")
+        dataSource[id]?.let {
+            return Result.Success(it)
+        }
+
+        return Result.Error("No existing reminder with ID $id")
     }
 
     override suspend fun deleteAllReminders() {
-        TODO("delete all the reminders")
+        dataSource.clear()
     }
 
 
