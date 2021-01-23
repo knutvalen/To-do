@@ -10,8 +10,7 @@ import com.udacity.project4.locationreminders.data.dto.ReminderDTO
 import com.udacity.project4.locationreminders.getOrAwaitValue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
-import org.hamcrest.CoreMatchers.not
-import org.hamcrest.CoreMatchers.nullValue
+import org.hamcrest.CoreMatchers.*
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Before
 import org.junit.Rule
@@ -39,22 +38,31 @@ class RemindersListViewModelTest {
     @Before
     fun setupViewModel() {
         reminderDataSource = FakeDataSource()
-
-        runBlocking {
-            FirebaseApp.initializeApp(getApplicationContext())
-            reminderDataSource.saveReminder(ReminderDTO("title1", "description1", "location1", 55.55, 44.44))
-        }
-
+        FirebaseApp.initializeApp(getApplicationContext())
         remindersListViewModel = RemindersListViewModel(getApplicationContext(), reminderDataSource)
     }
 
     @Test
     fun loadReminders_loadsSuccessfully() {
+        val reminder1 = ReminderDTO("title1", "description1", "location1", 55.55, 44.44)
+        val reminder2 = ReminderDTO("title2", "description2", "location2", 55.55, 44.44)
+        val reminder3 = ReminderDTO("title3", "description3", "location3", 55.55, 44.44)
+
+        runBlocking {
+            reminderDataSource.saveReminder(reminder1)
+            reminderDataSource.saveReminder(reminder2)
+            reminderDataSource.saveReminder(reminder3)
+        }
+
         remindersListViewModel.loadReminders()
 
         val value = remindersListViewModel.remindersList.getOrAwaitValue()
 
-        assertThat(value, not(nullValue()))
+        assertThat(value, not(emptyList()))
+        assertThat(value.count(), `is`(3))
+        assertThat(value[0].id, `is`(reminder1.id))
+        assertThat(value[1].id, `is`(reminder2.id))
+        assertThat(value[2].id, `is`(reminder3.id))
     }
 
 }
