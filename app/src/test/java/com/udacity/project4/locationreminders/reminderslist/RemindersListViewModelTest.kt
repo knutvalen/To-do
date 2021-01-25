@@ -12,10 +12,12 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.CoreMatchers.*
 import org.hamcrest.MatcherAssert.assertThat
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.koin.core.context.stopKoin
 
 @RunWith(AndroidJUnit4::class)
 @ExperimentalCoroutinesApi
@@ -69,6 +71,11 @@ class RemindersListViewModelTest {
             reminderDataSource.saveReminder(reminder2)
             reminderDataSource.saveReminder(reminder3)
         }
+    }
+
+    @After
+    fun destroy() {
+        stopKoin()
     }
 
     @Test
