@@ -21,8 +21,6 @@ import org.junit.runner.RunWith
 @ExperimentalCoroutinesApi
 class RemindersListViewModelTest {
 
-    //TODO: provide testing to the RemindersListViewModel and its live data objects
-
     private lateinit var remindersListViewModel: RemindersListViewModel
     private lateinit var reminderDataSource: FakeDataSource
 
@@ -36,7 +34,7 @@ class RemindersListViewModelTest {
     var instantExecutorRule = InstantTaskExecutorRule()
 
     @Before
-    fun setupViewModel() {
+    fun setup() {
         reminderDataSource = FakeDataSource()
         FirebaseApp.initializeApp(getApplicationContext())
         remindersListViewModel = RemindersListViewModel(getApplicationContext(), reminderDataSource)
@@ -44,9 +42,27 @@ class RemindersListViewModelTest {
 
     @Test
     fun loadReminders_loadsSuccessfully() {
-        val reminder1 = ReminderDTO("title1", "description1", "location1", 55.55, 44.44)
-        val reminder2 = ReminderDTO("title2", "description2", "location2", 55.55, 44.44)
-        val reminder3 = ReminderDTO("title3", "description3", "location3", 55.55, 44.44)
+        val reminder1 = ReminderDTO(
+            "title1",
+            "description1",
+            "location1",
+            55.55,
+            44.44
+        )
+        val reminder2 = ReminderDTO(
+            "title2",
+            "description2",
+            "location2",
+            55.55,
+            44.44
+        )
+        val reminder3 = ReminderDTO(
+            "title3",
+            "description3",
+            "location3",
+            55.55,
+            44.44
+        )
 
         runBlocking {
             reminderDataSource.saveReminder(reminder1)
@@ -58,7 +74,6 @@ class RemindersListViewModelTest {
 
         val value = remindersListViewModel.remindersList.getOrAwaitValue()
 
-        assertThat(value, not(emptyList()))
         assertThat(value.count(), `is`(3))
         assertThat(value[0].id, `is`(reminder1.id))
         assertThat(value[1].id, `is`(reminder2.id))
