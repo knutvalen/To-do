@@ -4,10 +4,15 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.firebase.FirebaseApp
+import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.locationreminders.MainCoroutineRule
 import com.udacity.project4.locationreminders.data.FakeDataSource
-
+import com.udacity.project4.locationreminders.getOrAwaitValue
+import com.udacity.project4.locationreminders.reminderslist.ReminderDataItem
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
+import org.hamcrest.CoreMatchers.`is`
+import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -40,12 +45,99 @@ class SaveReminderViewModelTest {
     fun onClear_clearsLiveData() {
         saveReminderViewModel.onClear()
 
-        assert(saveReminderViewModel.reminderTitle.value == null)
-        assert(saveReminderViewModel.reminderDescription.value == null)
-        assert(saveReminderViewModel.reminderSelectedLocationStr.value == null)
-        assert(saveReminderViewModel.selectedPOI.value == null)
-        assert(saveReminderViewModel.latitude.value == null)
-        assert(saveReminderViewModel.longitude.value == null)
+        assert(saveReminderViewModel.reminderTitle.getOrAwaitValue() == null)
+        assert(saveReminderViewModel.reminderDescription.getOrAwaitValue() == null)
+        assert(saveReminderViewModel.reminderSelectedLocationStr.getOrAwaitValue() == null)
+        assert(saveReminderViewModel.selectedPOI.getOrAwaitValue() == null)
+        assert(saveReminderViewModel.latitude.getOrAwaitValue() == null)
+        assert(saveReminderViewModel.longitude.getOrAwaitValue() == null)
+    }
+
+    @Test
+    fun check_loading() {
+        val reminderDataItem1 = ReminderDataItem(
+            "title1",
+            "description1",
+            "location1",
+            55.55,
+            44.44
+        )
+        val reminderDataItem2 = ReminderDataItem(
+            "title2",
+            "description2",
+            "location2",
+            55.55,
+            44.44
+        )
+        val reminderDataItem3 = ReminderDataItem(
+            "title3",
+            "description3",
+            "location3",
+            55.55,
+            44.44
+        )
+
+        mainCoroutineRule.pauseDispatcher()
+
+        runBlocking {
+            saveReminderViewModel.validateAndSaveReminder(reminderDataItem1)
+            saveReminderViewModel.validateAndSaveReminder(reminderDataItem2)
+            saveReminderViewModel.validateAndSaveReminder(reminderDataItem3)
+
+        }
+
+        assertThat(saveReminderViewModel.showLoading.getOrAwaitValue(), `is`(true))
+
+        mainCoroutineRule.resumeDispatcher()
+
+        assertThat(saveReminderViewModel.showLoading.getOrAwaitValue(), `is`(false))
+        assertThat(saveReminderViewModel.navigationCommand.getOrAwaitValue(), `is`(NavigationCommand.Back))
+        //getApplicationContext().getString(R.string.reminder_saved)
+    }
+
+    @Test
+    fun validateEnteredData_validData_returnsTrue() {
+        val reminderDataItem1 = ReminderDataItem(
+            "title1",
+            "description1",
+            "location1",
+            55.55,
+            44.44
+        )
+
+        val value = saveReminderViewModel.validateEnteredData(reminderDataItem1)
+
+        assertThat(value, `is`(true))
+    }
+
+    @Test
+    fun validateEnteredData_invalidTitle_returnsFalse() {
+        val reminderDataItem1 = ReminderDataItem(
+            null,
+            "description1",
+            "location1",
+            55.55,
+            44.44
+        )
+
+        val value = saveReminderViewModel.validateEnteredData(reminderDataItem1)
+
+        assertThat(value, `is`(false))
+    }
+
+    @Test
+    fun validateEnteredData_invalidLocation_returnsFalse() {
+        val reminderDataItem1 = ReminderDataItem(
+            "title1",
+            "description1",
+            "",
+            55.55,
+            44.44
+        )
+
+        val value = saveReminderViewModel.validateEnteredData(reminderDataItem1)
+
+        assertThat(value, `is`(false))
     }
 
 }

@@ -23,6 +23,7 @@ class RemindersListViewModelTest {
 
     private lateinit var remindersListViewModel: RemindersListViewModel
     private lateinit var reminderDataSource: FakeDataSource
+    private lateinit var reminderList: List<ReminderDTO>
 
     // Set the main coroutines dispatcher for unit testing.
     @ExperimentalCoroutinesApi
@@ -38,10 +39,7 @@ class RemindersListViewModelTest {
         reminderDataSource = FakeDataSource()
         FirebaseApp.initializeApp(getApplicationContext())
         remindersListViewModel = RemindersListViewModel(getApplicationContext(), reminderDataSource)
-    }
 
-    @Test
-    fun loadReminders_loadsSuccessfully() {
         val reminder1 = ReminderDTO(
             "title1",
             "description1",
@@ -64,20 +62,34 @@ class RemindersListViewModelTest {
             44.44
         )
 
+        reminderList = listOf(reminder1, reminder2, reminder3)
+
         runBlocking {
             reminderDataSource.saveReminder(reminder1)
             reminderDataSource.saveReminder(reminder2)
             reminderDataSource.saveReminder(reminder3)
         }
+    }
 
+    @Test
+    fun loadReminders_loadsSuccessfully() {
         remindersListViewModel.loadReminders()
 
         val value = remindersListViewModel.remindersList.getOrAwaitValue()
 
         assertThat(value.count(), `is`(3))
-        assertThat(value[0].id, `is`(reminder1.id))
-        assertThat(value[1].id, `is`(reminder2.id))
-        assertThat(value[2].id, `is`(reminder3.id))
+        assertThat(value[0].id, `is`(reminderList[0].id))
+        assertThat(value[1].id, `is`(reminderList[1].id))
+        assertThat(value[2].id, `is`(reminderList[2].id))
+    }
+
+    @Test
+    fun loadReminders_dataSourceUnavailable_remindersListIsNull() {
+        reminderDataSource.setReturnError(true)
+        remindersListViewModel.loadReminders()
+
+        assert(remindersListViewModel.showLoading.getOrAwaitValue() == false)
+        assert(remindersListViewModel.remindersList.value == null)
     }
 
 }

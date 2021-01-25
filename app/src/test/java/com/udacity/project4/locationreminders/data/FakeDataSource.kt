@@ -7,12 +7,17 @@ import com.udacity.project4.locationreminders.data.dto.Result
 class FakeDataSource : ReminderDataSource {
 
     private var dataSource: LinkedHashMap<String, ReminderDTO> = LinkedHashMap()
-
     private var shouldReturnError = false
 
-//    TODO: Create a fake data source to act as a double to the real data source
+    fun setReturnError(value: Boolean) {
+        shouldReturnError = value
+    }
 
     override suspend fun getReminders(): Result<List<ReminderDTO>> {
+        if (shouldReturnError) {
+            return Result.Error("Test error")
+        }
+
         val list: List<ReminderDTO> = dataSource.values.toList()
         return Result.Success(list)
     }
@@ -22,6 +27,10 @@ class FakeDataSource : ReminderDataSource {
     }
 
     override suspend fun getReminder(id: String): Result<ReminderDTO> {
+        if (shouldReturnError) {
+            return Result.Error("Test error")
+        }
+
         dataSource[id]?.let {
             return Result.Success(it)
         }
@@ -32,6 +41,5 @@ class FakeDataSource : ReminderDataSource {
     override suspend fun deleteAllReminders() {
         dataSource.clear()
     }
-
 
 }
