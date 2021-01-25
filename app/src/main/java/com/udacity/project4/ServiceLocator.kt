@@ -13,20 +13,20 @@ object ServiceLocator {
     private val lock = Any()
     private var dao: RemindersDao? = null
     @Volatile
-    var dataSource: ReminderDataSource? = null
+    var repository: ReminderDataSource? = null
         @VisibleForTesting set
 
-    fun provideDataSource(context: Context): ReminderDataSource {
+    fun provideRepository(context: Context): ReminderDataSource {
         synchronized(this) {
-            return dataSource ?: createDataSource(context)
+            return repository ?: createRepository(context)
         }
     }
 
-    private fun createDataSource(context: Context): ReminderDataSource {
+    private fun createRepository(context: Context): ReminderDataSource {
         val dao = dao ?: LocalDB.createRemindersDao(context)
-        val dataSource = RemindersLocalRepository(dao)
-        this.dataSource = dataSource
-        return dataSource
+        val repository = RemindersLocalRepository(dao)
+        this.repository = repository
+        return repository
     }
 
     @VisibleForTesting
@@ -37,7 +37,7 @@ object ServiceLocator {
             }
 
             dao = null
-            dataSource = null
+            repository = null
         }
     }
 
