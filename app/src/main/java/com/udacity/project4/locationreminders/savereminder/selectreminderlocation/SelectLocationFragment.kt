@@ -59,8 +59,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             .findFragmentById(R.id.googleMap) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-//        TODO: add style to the map
-
         binding.buttonSaveLocation.setOnClickListener {
             onLocationSelected()
         }
@@ -113,9 +111,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     }
 
     private fun onLocationSelected() {
-        //        TODO: When the user confirms on the selected location,
-        //         send back the selected location details to the view model
-        //         and navigate back to the previous fragment to save the reminder and add the geofence
         pointOfInterest?.let { pointOfInterest ->
             viewModel.reminderSelectedLocationStr.value = pointOfInterest.name
             viewModel.selectedPOI.value = pointOfInterest
