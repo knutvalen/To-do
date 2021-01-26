@@ -32,6 +32,7 @@ import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import org.koin.test.AutoCloseKoinTest
 import org.koin.test.get
+import androidx.test.espresso.Espresso.pressBack
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
@@ -109,13 +110,15 @@ class RemindersActivityTest :
 
         // add reminder
         onView(withId(R.id.addReminderFAB)).perform(click())
+        onView(withId(R.id.saveReminder)).perform(click())
         onView(withId(R.id.reminderTitle)).perform(
             typeText("Reminder title"),
-            closeSoftKeyboard()
         )
         onView(withId(R.id.reminderDescription)).perform(
-            typeText("Reminder description")
+            typeText("Reminder description"),
+            closeSoftKeyboard()
         )
+        onView(withId(R.id.saveReminder)).perform(click())
         onView(withId(R.id.selectLocation)).perform(click())
         openActionBarOverflowOrOptionsMenu(getInstrumentation().targetContext)
         onView(withText(R.string.terrain_map)).perform(click())
@@ -125,6 +128,7 @@ class RemindersActivityTest :
         onView(withText(R.string.hybrid_map)).perform(click())
         openActionBarOverflowOrOptionsMenu(getInstrumentation().targetContext)
         onView(withText(R.string.normal_map)).perform(click())
+        activityScenario.close()
     }
 
 }

@@ -52,6 +52,7 @@ class ReminderListFragmentTest {
     fun init() {
         stopKoin()//stop the original app koin
         appContext = getApplicationContext()
+        repository = FakeAndroidDataSource()//Get our fake repository
         val myModule = module {
             viewModel {
                 RemindersListViewModel(
@@ -72,8 +73,6 @@ class ReminderListFragmentTest {
         startKoin {
             modules(listOf(myModule))
         }
-        //Get our fake repository
-        repository = FakeAndroidDataSource()
 
         //clear the data to start fresh
         runBlocking {
@@ -127,7 +126,7 @@ class ReminderListFragmentTest {
         runBlocking {
             repository.saveReminder(reminder1)
         }
-        
+
         val fragmentScenario = launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
         dataBindingIdlingResource.monitorFragment(fragmentScenario)
 
@@ -142,7 +141,9 @@ class ReminderListFragmentTest {
         (repository as FakeAndroidDataSource).setReturnError(true)
         val fragmentScenario = launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
         dataBindingIdlingResource.monitorFragment(fragmentScenario)
-        onView(withText("ERROR:FakeAndroidDataSource:getReminders()")).check(matches(isDisplayed()))
+        onView(withId(R.id.reminderssRecyclerView)).check(matches(isDisplayed()))
+        onView(withId(com.google.android.material.R.id.snackbar_text))
+            .check(matches(withText("ERROR:FakeAndroidDataSource:getReminders()")))
     }
 
 }

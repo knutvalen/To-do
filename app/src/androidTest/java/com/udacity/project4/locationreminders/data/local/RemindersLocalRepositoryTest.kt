@@ -10,13 +10,10 @@ import com.udacity.project4.locationreminders.data.dto.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
-import org.hamcrest.CoreMatchers.`is`
-import org.hamcrest.CoreMatchers.instanceOf
+import org.hamcrest.CoreMatchers
+import org.hamcrest.CoreMatchers.*
 import org.hamcrest.MatcherAssert.assertThat
-import org.junit.After
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
+import org.junit.*
 import org.junit.runner.RunWith
 
 @ExperimentalCoroutinesApi
@@ -25,6 +22,48 @@ import org.junit.runner.RunWith
 @MediumTest
 class RemindersLocalRepositoryTest {
 
-//    TODO: Add testing implementation to the RemindersLocalRepository.kt
+    private lateinit var remindersLocalRepository: RemindersLocalRepository
+    private lateinit var database: RemindersDatabase
+
+    @get:Rule
+    var instantExecutorRule = InstantTaskExecutorRule()
+
+    @Before
+    fun setUp() {
+        database = Room.databaseBuilder(
+            ApplicationProvider.getApplicationContext(),
+            RemindersDatabase::class.java,
+            "locationReminders.db"
+        ).build()
+
+        remindersLocalRepository = RemindersLocalRepository(database.reminderDao())
+    }
+
+    @After
+    fun tearDown() {
+        database.close()
+    }
+
+    @Test
+    fun saveReminder_getReminder() = runBlocking {
+        val reminder1 = ReminderDTO(
+            "title1",
+            "description1",
+            "location1",
+            55.55,
+            44.44
+        )
+
+        remindersLocalRepository.saveReminder(reminder1)
+        val value = remindersLocalRepository.getReminder(reminder1.id)
+
+        assertThat(value as Result.Success, notNullValue())
+        assertThat(value.data.id, `is`(reminder1.id))
+        assertThat(value.data.title, `is`(reminder1.title))
+        assertThat(value.data.description, `is`(reminder1.description))
+        assertThat(value.data.location, `is`(reminder1.location))
+        assertThat(value.data.latitude, `is`(reminder1.latitude))
+        assertThat(value.data.longitude, `is`(reminder1.longitude))
+    }
 
 }
