@@ -98,7 +98,7 @@ class RemindersListViewModelTest {
 
         assert(remindersListViewModel.showLoading.getOrAwaitValue() == false)
         assert(remindersListViewModel.remindersList.value == null)
-        assertThat(remindersListViewModel.showSnackBar.getOrAwaitValue(), `is`("Test error"))
+        assertThat(remindersListViewModel.showSnackBar.getOrAwaitValue(), `is`("ERROR:FakeDataSource:getReminders()"))
     }
 
 }
