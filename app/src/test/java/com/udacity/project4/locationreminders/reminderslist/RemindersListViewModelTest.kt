@@ -7,6 +7,7 @@ import com.google.firebase.FirebaseApp
 import com.udacity.project4.locationreminders.MainCoroutineRule
 import com.udacity.project4.locationreminders.data.FakeDataSource
 import com.udacity.project4.locationreminders.data.dto.ReminderDTO
+import com.udacity.project4.locationreminders.data.dto.Result
 import com.udacity.project4.locationreminders.getOrAwaitValue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
@@ -97,6 +98,7 @@ class RemindersListViewModelTest {
 
         assert(remindersListViewModel.showLoading.getOrAwaitValue() == false)
         assert(remindersListViewModel.remindersList.value == null)
+        assertThat(remindersListViewModel.showSnackBar.getOrAwaitValue(), `is`("Test error"))
     }
 
 }

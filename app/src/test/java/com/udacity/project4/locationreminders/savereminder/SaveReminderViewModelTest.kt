@@ -1,9 +1,11 @@
 package com.udacity.project4.locationreminders.savereminder
 
+import android.provider.Settings.Global.getString
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.firebase.FirebaseApp
+import com.udacity.project4.R
 import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.locationreminders.MainCoroutineRule
 import com.udacity.project4.locationreminders.data.FakeDataSource
@@ -90,7 +92,6 @@ class SaveReminderViewModelTest {
             saveReminderViewModel.validateAndSaveReminder(reminderDataItem1)
             saveReminderViewModel.validateAndSaveReminder(reminderDataItem2)
             saveReminderViewModel.validateAndSaveReminder(reminderDataItem3)
-
         }
 
         assertThat(saveReminderViewModel.showLoading.getOrAwaitValue(), `is`(true))
@@ -99,7 +100,6 @@ class SaveReminderViewModelTest {
 
         assertThat(saveReminderViewModel.showLoading.getOrAwaitValue(), `is`(false))
         assertThat(saveReminderViewModel.navigationCommand.getOrAwaitValue(), `is`(NavigationCommand.Back))
-        //getApplicationContext().getString(R.string.reminder_saved)
     }
 
     @Test
