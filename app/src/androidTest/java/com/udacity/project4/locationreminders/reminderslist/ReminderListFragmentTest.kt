@@ -115,7 +115,7 @@ class ReminderListFragmentTest {
     }
 
     @Test
-    fun showsLoadedReminder(): Unit = runBlocking {
+    fun showsLoadedReminder() {
         val reminder1 = ReminderDTO(
             "title1",
             "description1",
@@ -124,8 +124,10 @@ class ReminderListFragmentTest {
             44.44
         )
 
-        repository.saveReminder(reminder1)
-
+        runBlocking {
+            repository.saveReminder(reminder1)
+        }
+        
         val fragmentScenario = launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
         dataBindingIdlingResource.monitorFragment(fragmentScenario)
 
