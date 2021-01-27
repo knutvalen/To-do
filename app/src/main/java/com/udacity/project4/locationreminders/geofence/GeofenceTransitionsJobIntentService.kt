@@ -37,6 +37,7 @@ class GeofenceTransitionsJobIntentService : JobIntentService(), CoroutineScope {
     }
 
     override fun onHandleWork(intent: Intent) {
+        Timber.d("onHandleWork intent: $intent")
         if (intent.action == SaveReminderFragment.ACTION_GEOFENCE_EVENT) {
             val geofencingEvent = GeofencingEvent.fromIntent(intent)
 
