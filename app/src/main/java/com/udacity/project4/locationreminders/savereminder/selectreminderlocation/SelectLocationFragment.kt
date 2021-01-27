@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Looper
 import android.view.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.databinding.DataBindingUtil
 import com.google.android.gms.location.LocationCallback
@@ -31,7 +32,6 @@ import timber.log.Timber
 
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
-    //Use Koin to get the view model of the SaveReminder
     override val viewModel: SaveReminderViewModel by inject()
     private lateinit var binding: FragmentSelectLocationBinding
     private lateinit var map: GoogleMap
@@ -39,8 +39,22 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private var pointOfInterest: PointOfInterest? = null
     private var requestingLocationUpdates = false
 
+    private val requestPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { permissionGranted ->
+        Timber.d(permissionGranted.toString())
+
+        if (permissionGranted) {
+            enableMyLocation()
+        } else {
+            viewModel.showSnackBar.value = getString(R.string.permission_denied_explanation)
+        }
+    }
+
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View {
         binding = DataBindingUtil.inflate(
             inflater,
@@ -65,6 +79,59 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         }
 
         return binding.root
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.map_options, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
+        R.id.normal_map -> {
+            map.mapType = GoogleMap.MAP_TYPE_NORMAL
+            true
+        }
+        R.id.hybrid_map -> {
+            map.mapType = GoogleMap.MAP_TYPE_HYBRID
+            true
+        }
+        R.id.satellite_map -> {
+            map.mapType = GoogleMap.MAP_TYPE_SATELLITE
+            true
+        }
+        R.id.terrain_map -> {
+            map.mapType = GoogleMap.MAP_TYPE_TERRAIN
+            true
+        }
+        else -> super.onOptionsItemSelected(item)
+    }
+
+    override fun onMapReady(googleMap: GoogleMap) {
+        map = googleMap
+        setPoiClick(map)
+        enableMyLocation()
+        startMapGestureListener()
+        setMapStyle(map)
+
+        map.setOnMyLocationButtonClickListener {
+            requestingLocationUpdates = true
+            false
+        }
+    }
+
+    private fun setPoiClick(map: GoogleMap) {
+        map.setOnPoiClickListener { poi ->
+            poiMarker?.remove()
+
+            poiMarker = map.addMarker(
+                MarkerOptions()
+                    .position(poi.latLng)
+                    .title(poi.name)
+            )
+
+            poiMarker?.showInfoWindow()
+            pointOfInterest = poi
+            binding.buttonSaveLocation.isEnabled = poiMarker != null
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -121,43 +188,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.map_options, menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
-        R.id.normal_map -> {
-            map.mapType = GoogleMap.MAP_TYPE_NORMAL
-            true
-        }
-        R.id.hybrid_map -> {
-            map.mapType = GoogleMap.MAP_TYPE_HYBRID
-            true
-        }
-        R.id.satellite_map -> {
-            map.mapType = GoogleMap.MAP_TYPE_SATELLITE
-            true
-        }
-        R.id.terrain_map -> {
-            map.mapType = GoogleMap.MAP_TYPE_TERRAIN
-            true
-        }
-        else -> super.onOptionsItemSelected(item)
-    }
-
-    override fun onMapReady(googleMap: GoogleMap) {
-        map = googleMap
-        setPoiClick(map)
-        enableMyLocation()
-        startMapGestureListener()
-        setMapStyle(map)
-
-        map.setOnMyLocationButtonClickListener {
-            requestingLocationUpdates = true
-            false
-        }
-    }
-
     private fun setMapStyle(map: GoogleMap) {
         try {
             val success = map.setMapStyle(
@@ -179,28 +209,26 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private fun enableMyLocation() {
         if (!::map.isInitialized) return
 
-        if (foregroundAndBackgroundLocationPermissionApproved()) {
+        if (getPermissionStates().containsValue(false)) {
+            requestPermissions()
+        } else {
             map.isMyLocationEnabled = true
             startLocationUpdates()
             requestingLocationUpdates = true
-        } else {
-            requestForegroundAndBackgroundLocationPermissions()
         }
     }
 
-    /*
-     *  Determines whether the app has the appropriate permissions across Android 10+ and all other
-     *  Android versions.
-     */
-    @TargetApi(29)
-    private fun foregroundAndBackgroundLocationPermissionApproved(): Boolean {
-        val foregroundLocationApproved =
-                PackageManager.PERMISSION_GRANTED == checkSelfPermission(
-                    requireContext(),
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                )
+    @TargetApi(Build.VERSION_CODES.Q)
+    private fun getPermissionStates(): MutableMap<String, Boolean> {
+        val permissionStates = mutableMapOf<String, Boolean>()
 
-        val backgroundPermissionApproved = when {
+        permissionStates[Manifest.permission.ACCESS_FINE_LOCATION] =
+            PackageManager.PERMISSION_GRANTED == checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
+
+        permissionStates[Manifest.permission.ACCESS_BACKGROUND_LOCATION] = when {
             runningQOrLater -> {
                 PackageManager.PERMISSION_GRANTED == checkSelfPermission(
                     requireContext(),
@@ -210,74 +238,22 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             else -> true
         }
 
-        return foregroundLocationApproved && backgroundPermissionApproved
+        return permissionStates
     }
 
-    /*
-     *  Requests ACCESS_FINE_LOCATION and (on Android 10+ (Q) ACCESS_BACKGROUND_LOCATION.
-     */
-    @TargetApi(29 )
-    private fun requestForegroundAndBackgroundLocationPermissions() {
-        if (foregroundAndBackgroundLocationPermissionApproved()) return
+    @TargetApi(Build.VERSION_CODES.Q)
+    private fun requestPermissions() {
+        val permissionStates = getPermissionStates()
 
-        // Else request the permission
-        var permissionsArray = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
-
-        val resultCode = when {
-            runningQOrLater -> {
-                permissionsArray += Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE
-            }
-            else -> REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
-        }
-
-        requestPermissions(
-            permissionsArray,
-            resultCode
-        )
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        Timber.d("onRequestPermissionsResult")
-
-        if (grantResults.isEmpty() ||
-            grantResults[0] == PackageManager.PERMISSION_DENIED ||
-            (requestCode == REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE &&
-                    grantResults[1] ==
-                    PackageManager.PERMISSION_DENIED)
-        ) {
-            // Permission denied.
-            viewModel.showSnackBar.value = getString(R.string.permission_denied_explanation)
-        } else {
-            // permission granted
-            enableMyLocation()
-        }
-    }
-
-    private fun setPoiClick(map: GoogleMap) {
-        map.setOnPoiClickListener { poi ->
-            poiMarker?.remove()
-
-            poiMarker = map.addMarker(
-                MarkerOptions()
-                    .position(poi.latLng)
-                    .title(poi.name)
-            )
-
-            poiMarker?.showInfoWindow()
-            pointOfInterest = poi
-            binding.buttonSaveLocation.isEnabled = poiMarker != null
+        if (permissionStates[Manifest.permission.ACCESS_FINE_LOCATION] == false) {
+            requestPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        } else if (permissionStates[Manifest.permission.ACCESS_BACKGROUND_LOCATION] == false) {
+            requestPermission.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
         }
     }
 
     companion object {
         private val runningQOrLater = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-        private const val REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE = 33
-        private const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
     }
 
 }

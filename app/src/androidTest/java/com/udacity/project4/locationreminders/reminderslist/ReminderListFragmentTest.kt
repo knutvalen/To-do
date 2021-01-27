@@ -21,7 +21,6 @@ import com.udacity.project4.locationreminders.data.local.LocalDB
 import com.udacity.project4.locationreminders.data.local.RemindersLocalRepository
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.util.DataBindingIdlingResource
-import com.udacity.project4.util.monitorFragment
 import com.udacity.project4.utils.EspressoIdlingResource
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
@@ -102,9 +101,9 @@ class ReminderListFragmentTest {
     @Test
     fun clickAddReminderButton_navigateToSaveReminderFragment() {
         val fragmentScenario = launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
-        dataBindingIdlingResource.monitorFragment(fragmentScenario)
         val navController = mock(NavController::class.java)
         fragmentScenario.onFragment {
+            dataBindingIdlingResource.activity = it.activity!!
             Navigation.setViewNavController(it.view!!, navController)
         }
 
@@ -128,7 +127,9 @@ class ReminderListFragmentTest {
         }
 
         val fragmentScenario = launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
-        dataBindingIdlingResource.monitorFragment(fragmentScenario)
+        fragmentScenario.onFragment {
+            dataBindingIdlingResource.activity = it.activity!!
+        }
 
         onView(withId(R.id.reminderCardView)).check(matches(isDisplayed()))
         onView(withText("title1")).check(matches(isDisplayed()))
@@ -140,7 +141,9 @@ class ReminderListFragmentTest {
     fun showsErrorInSnackbar() {
         (repository as FakeAndroidDataSource).setReturnError(true)
         val fragmentScenario = launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
-        dataBindingIdlingResource.monitorFragment(fragmentScenario)
+        fragmentScenario.onFragment {
+            dataBindingIdlingResource.activity = it.activity!!
+        }
         onView(withId(R.id.reminderssRecyclerView)).check(matches(isDisplayed()))
         onView(withId(com.google.android.material.R.id.snackbar_text))
             .check(matches(withText("ERROR:FakeAndroidDataSource:getReminders()")))

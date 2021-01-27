@@ -19,7 +19,6 @@ import com.udacity.project4.locationreminders.data.local.RemindersLocalRepositor
 import com.udacity.project4.locationreminders.reminderslist.RemindersListViewModel
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.util.DataBindingIdlingResource
-import com.udacity.project4.util.monitorActivity
 import com.udacity.project4.utils.EspressoIdlingResource
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -32,7 +31,6 @@ import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import org.koin.test.AutoCloseKoinTest
 import org.koin.test.get
-import androidx.test.espresso.Espresso.pressBack
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
@@ -106,8 +104,9 @@ class RemindersActivityTest :
     fun navigateToSelectLocation_canSelectMapTypes() {
         // start Reminders screen
         val activityScenario = ActivityScenario.launch(RemindersActivity::class.java)
-        dataBindingIdlingResource.monitorActivity(activityScenario)
-
+        activityScenario.onActivity {
+            dataBindingIdlingResource.activity = it
+        }
         // add reminder
         onView(withId(R.id.addReminderFAB)).perform(click())
         onView(withId(R.id.saveReminder)).perform(click())
