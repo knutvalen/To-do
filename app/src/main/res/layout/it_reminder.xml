@@ -8,6 +8,7 @@
         <variable
             name="item"
             type="com.udacity.project4.locationreminders.reminderslist.ReminderDataItem" />
+
     </data>
 
     <androidx.cardview.widget.CardView
@@ -58,5 +59,7 @@
                 tools:text="Location" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
+
     </androidx.cardview.widget.CardView>
+
 </layout>
