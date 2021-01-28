@@ -5,7 +5,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.map
-import com.google.firebase.auth.FirebaseUser
 import com.udacity.project4.authentication.FirebaseUserLiveData
 import com.udacity.project4.utils.AuthenticationState
 import com.udacity.project4.utils.SingleLiveEvent
@@ -29,4 +28,5 @@ abstract class BaseViewModel(app: Application) : AndroidViewModel(app) {
             AuthenticationState.UNAUTHENTICATED
         }
     }
+
 }
